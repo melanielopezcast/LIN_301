@@ -5,39 +5,64 @@
   <title>Mini Site — HTML Basics</title>
 </head>
 <body>
+  <a id="top"></a> <!-- back-to-top anchor -->
   <!-- 1) HEADINGS & PARAGRAPHS -->
+  <header>
   <h1>My Mini Site</h1>
-  <p>Hello! My name is Melanie Lopez-Castano. Welcome to my website! It has both <em>emphasis</em> and <strong>strong</strong> text.</p>
-  <h2>Image</h2>
-  <p>
-    <img src="lin301me.png"
-  </p>
+    <nav>
+     <a href="#About">About</a>
+     <a href="#Education">Education</a>
+     <a href="#Projects">Projects</a>
+     <a href="#Hobbies">Hobbies</a>
+     <a href="#Contact">Contact</a>
+  </nav>
+  </header>
+  <main>
+    
+  <section id="About">
 <h2>About Me</h2>
-<p>I am a student at the University of Kentucky studying linguistics and CSD.</p>
-
-<h3>Interests</h3>
-<p>I love linguistics.</p>
-
-  <!-- 2) LINKS (attributes: href, optional target) -->
-  <h2>Links</h2>
+<p>Hello! My name is Melanie Lopez-Castano. Welcome to my website! It has both <em>emphasis</em> and <strong>strong</strong> text.</p>
+<p>I am from Louisville, Kentucky. My family is from Cuba, and growing up bilingual drew me towards linguistics and communication. I am a student at the University of Kentucky studying linguistics and CSD.</p>
   <p>
-    Visit <a href="https://github.com/melanielopezcast">my website</a>.  
-    (Try adding <code>target="_blank"</code> yourself to open in a new tab.)
+    <img src="lin301me.png" alt="This is me!" />
   </p>
+  </section>
+  
 
+<section id="Education">
+<h2>Education</h2>
+<p>Atherton High School (2018-2022)</p>
+<p>University of Kentucky, Communication Sciences and Disorders & Linguistics</p>
+</section>
 
+<section id="Projects">
+<h2>Projects</h2>
+<p>AAC (All About Communication) Lab and Rehab Makerspace (2023) - Dr. Mary Jo Cooley Hidecker</p>
+</section>
 
-  <!-- 4) LISTS -->
-  <h2>My TODO List</h2>
-  <ul>
-    <li>Write a paragraph</li>
-    <li>Add one link</li>
-    <li>Insert an image with a good <code>alt</code> description</li>
-  </ul>
+<section id="Hobbies">
+<h2>Hobbies</h2>
+<p>I love....
+<ul>
+  <li> cooking </li>
+  <li> music, movies, and reading </li>
+  <li> crocheting </li>
+  <li> my corgi, Rosie! </li>
+</ul>
+</p>
+</section>
 
-  <!-- 5) NESTING (inline inside block) -->
-  <h2>Nesting</h2>
-  <p>Inside this paragraph there is an <a href="#top">inline link</a> and some <em>inline emphasis</em>.</p>
+<section id="Contact">
+  <h2>Contact</h2>
+  <p>
+    Visit <a href="https://github.com/melanielopezcast">my website</a>. 
+  </p>
+  </section>
+</main>
+
+  <footer>
+    © 2025 Melanie Lopez-Castano · <a href="#top">Back to top</a>
+  </footer>
 
   <!-- 6) BLOCK vs INLINE (tiny inline styles just for boxes) -->
   <h2>Block vs Inline (visual)</h2>
