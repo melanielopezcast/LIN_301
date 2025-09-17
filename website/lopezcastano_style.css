@@ -1,15 +1,15 @@
 :root{
   --ink: black;                /* text color */
-  --paper: oldlace;              /* page background */
-  --brand-gold: magenta;         /* accent */
+  --paper: rgba(255, 204, 153, 0.4);              /* page background */
+  --brand-gold: rgba(153, 51, 102, 0.9);         /* accent */
   --space-2: 0.5rem;         /* spacing scale */
 }
 body{ 
   color: var(--ink); background: var(--paper); }
 /* Headings */
 header{
-  position: sticky; top: 0;
-  background: var(--paper);
+  position: sticky; top: 0; text-align: center;
+  background: var(--brand-gold);
   border-bottom: 1px solid rgba(0,0,0,0.12);
 }
 nav{
@@ -18,14 +18,15 @@ nav{
   justify-content: center;
   padding: calc(var(--space-2) * 0.75) 0;
 }
+
 h1 {
-  font-size: 2rem;
-  color: var(--brand-gold);
+  font-size: 2.5rem;
+  color: rgba(255, 204, 153, 1);
 }
 
 h2 {
   font-size: 1.5rem;
-  color: var(--brand-gold);
+  color: var(--brand-gold)
 }
 
 p {
