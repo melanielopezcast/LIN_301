@@ -25,7 +25,7 @@
 <p><em>Hello!</em> My name is <strong>Melanie Lopez-Castano</strong>. Welcome to my website!</p>
 <p>I am from Louisville, Kentucky. My family is from Cuba, and growing up bilingual in both Spanish and English drew me towards linguistics and communication. I am a student at the University of Kentucky studying linguistics and CSD.</p>
   <p>
-    <img src="lin301me.png" alt="This is me!">
+    <img src="lin301me copy.png" alt="This is me!">
   </p>
   </section>
   
@@ -56,15 +56,19 @@
 <section id="Contact">
   <h2 class="tagline">Contact</h2>
   <p>
-    Visit <a href="https://github.com/melanielopezcast">my website</a>. 
+    Visit <a href="https://github.com/melanielopezcast">my website.</a>. 
   </p>
   </section>
 </main>
 
   <footer>
-    © 2025 Melanie Lopez-Castano · <a href="#top">Back to top</a>
+   <p>&copy; <span id="year"></span> © 2025 Melanie Lopez-Castano · <a href="#top">Back to top</a></p>
   </footer>
 
+<script>
+  const yearSpan =document.getElementById("year");
+  yearSpan.textContent = new Date().getFullYear();
+</script>
   <!-- 6) BLOCK vs INLINE (tiny inline styles just for boxes) -->
   <h2>Block vs Inline (visual)</h2>
   <div style="border:2px dashed #ccc; padding:.5rem; margin:.3rem 0;">
