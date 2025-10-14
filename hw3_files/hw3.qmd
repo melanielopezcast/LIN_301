@@ -1,0 +1,33 @@
+**Loading File**
+
+```{python}
+with open("shakespeare.txt", "r", encoding="utf-8") as f:
+    text = f.read()
+```
+
+**Making a List**
+
+```{python}
+first_words = text.split()[:1000]
+print(first_words)
+first_words[499]
+```
+
+**Narrowing the List**
+
+```{python}
+chosen_ones = ["the", "and", "of", "love", "with", "if", "friend", "eye", "sweet", "loss"]
+print(chosen_ones)
+```
+
+**Making a Dictionary**
+
+```{python}
+bill = text.split()
+word_counts = {word: bill.count(word) for word in chosen_ones}
+print(word_counts)
+```
+
+**Reflection**
+
+The easiest part of this assignment was probably picking chosen words for a list. The hardest part for me was using .count() to show how many times the chosen words appeared in the text. Lists and dictionaries would be very helpful with analyzing large amounts of linguistic data and finding patterns throughout, so long as you can code for it.

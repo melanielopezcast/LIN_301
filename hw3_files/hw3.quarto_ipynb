@@ -1,0 +1,101 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "**Loading File**\n"
+      ],
+      "id": "842bbc08"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "with open(\"shakespeare.txt\", \"r\", encoding=\"utf-8\") as f:\n",
+        "    text = f.read()"
+      ],
+      "id": "81339c52",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "**Making a List**\n"
+      ],
+      "id": "4a245386"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "first_words = text.split()[:1000]\n",
+        "print(first_words)\n",
+        "first_words[499]"
+      ],
+      "id": "9a76bb6e",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "**Narrowing the List**\n"
+      ],
+      "id": "af2cce7d"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "chosen_ones = [\"the\", \"and\", \"of\", \"love\", \"with\", \"if\", \"friend\", \"eye\", \"sweet\", \"loss\"]\n",
+        "print(chosen_ones)"
+      ],
+      "id": "fc6df38d",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "**Making a Dictionary**\n"
+      ],
+      "id": "88876f99"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "bill = text.split()\n",
+        "word_counts = {word: bill.count(word) for word in chosen_ones}\n",
+        "print(word_counts)"
+      ],
+      "id": "b07d72b4",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "**Reflection**\n",
+        "\n",
+        "The easiest part of this assignment was probably picking chosen words for a list. The hardest part for me was using .count() to show how many times the chosen words appeared in the text. Lists and dictionaries would be very helpful with analyzing large amounts of linguistic data and finding patterns throughout, so long as you can code for it."
+      ],
+      "id": "25215443"
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "display_name": "Python 3",
+      "language": "python",
+      "name": "python3"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}

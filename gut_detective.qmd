@@ -1,0 +1,31 @@
+```{python}
+with open("alice.txt", "r", encoding="utf-8") as f:
+    alice_text = f.read()
+```
+
+```{python}
+with open("mansfield_park.txt", "r", encoding="utf-8") as f:
+    mans_text = f.read()
+```
+
+```{python}
+import re
+
+alice_clean = re.split(r"[\s\W]+", alice_text)
+alice_clean = [w for w in alice_list if w]
+
+print(alice_clean[:100])
+```
+
+```{python}
+print(len(mans_clean), len(alice_clean))
+
+mans_unique = []
+alice_unique = []
+
+for wd in mans_clean:
+  if wd not in mans_unique:
+    mans_unique.append(wd)
+    
+print(len(mans_unique))
+```
