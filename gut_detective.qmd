@@ -1,24 +1,32 @@
 ```{python}
 with open("alice.txt", "r", encoding="utf-8") as f:
-    alice_text = f.read()
+    alice = f.read()
 ```
 
 ```{python}
 with open("mansfield_park.txt", "r", encoding="utf-8") as f:
-    mans_text = f.read()
+    mans = f.read()
 ```
 
 ```{python}
 import re
 
-alice_clean = re.split(r"[\s\W]+", alice_text)
-alice_clean = [w for w in alice_list if w]
+mans_words = re.split(r"[\s\W]+", mans)
+mans_words = [w for w in mans_words if w]
+mans_clean = [w.lower() for w in mans_words]
 
-print(alice_clean[:100])
+alice_words = re.split(r"[\s\W]+", alice)
+alice_words = [w for w in alice_words if w]
+alice_clean = [w.lower() for w in alice_words]
+
+print(mans_clean[:50])
+print(alice_clean[:50])
 ```
 
 ```{python}
-print(len(mans_clean), len(alice_clean))
+
+print("There are", len(mans_clean), "words in Mansfield Park txt.")
+print("There are", len(alice_clean), "words in Alice In Wonderland.txt")
 
 mans_unique = []
 alice_unique = []
@@ -27,5 +35,14 @@ for wd in mans_clean:
   if wd not in mans_unique:
     mans_unique.append(wd)
     
+for wd in alice_clean:
+  if wd not in alice_unique:
+    alice_unique.append(wd)
+    
 print(len(mans_unique))
+print(len(alice_unique))
+```
+
+```{python}
+
 ```
