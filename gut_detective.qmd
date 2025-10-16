@@ -39,10 +39,71 @@ for wd in alice_clean:
   if wd not in alice_unique:
     alice_unique.append(wd)
     
-print(len(mans_unique))
-print(len(alice_unique))
+print("Unique words in Mansfield Park:", len(mans_unique))
+print("Unique words in Alice in Wonderland:", len(alice_unique))
 ```
 
 ```{python}
+mans_avg = sum(len(w) for w in mans_clean) / len(mans_clean)
+alice_avg = sum(len(w) for w in alice_clean) / len(alice_clean)
+
+print("Average word length in Mansfield Park:", round(mans_avg, 2))
+print("Average word length in Alice in Wonderland:", round(alice_avg, 2))
+```
+
+```{python}
+affixes_mans = {
+    "adverbs (-ly)": [w for w in mans_clean if w.endswith("ly")],
+    "prefix un-": [w for w in mans_clean if w.startswith("un")],
+    "suffix -ness": [w for w in mans_clean if w.endswith("ness")],
+    "prefix re-": [w for w in mans_clean if w.startswith("re")]
+}
+
+for label, words in affixes_mans.items():
+    print(f"Mansfield Park {label}: {len(words)}")
+
+affixes_alice = {
+    "adverbs (-ly)": [w for w in alice_clean if w.endswith("ly")],
+    "prefix un-": [w for w in alice_clean if w.startswith("un")],
+    "suffix -ness": [w for w in alice_clean if w.endswith("ness")],
+    "prefix re-": [w for w in alice_clean if w.startswith("re")]
+}
+
+for label, words in affixes_alice.items():
+    print(f"Alice in Wonderland {label}: {len(words)}")
+```
+
+```{python}
+quot_list = ['"', '“', '”']
+
+mans_dialogue = sum(mans.count(q) for q in quot_list)
+alice_dialogue = sum(alice.count(q) for q in quot_list)
+
+print("Dialogue in Mansfield Park:", mans_dialogue)
+print("Dialogue in Alice in Wonderland:", alice_dialogue)
+```
+
+```{python}
+def word_freq(wordlist):
+    freq = {}
+    for w in wordlist:
+        freq[w] = freq.get(w, 0) + 1
+    return freq
+
+# Count frequencies
+mans_freq = word_freq(mans_clean)
+alice_freq = word_freq(alice_clean)
+
+# Remove common stopwords
+for stop in ["the", "and", "of"]:
+    mans_freq.pop(stop, None)
+    alice_freq.pop(stop, None)
+
+# Sort by most frequent
+mans_sorted = sorted(mans_freq.items(), key=lambda x: x[1], reverse=True)
+alice_sorted = sorted(alice_freq.items(), key=lambda x: x[1], reverse=True)
+
+print("Top 20 words in Mansfield Park:", mans_sorted[:20])
+print("Top 20 words in Alice in Wonderland:", alice_sorted[:20])
 
 ```
