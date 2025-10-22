@@ -183,3 +183,19 @@ urllib.request.urlretrieve(url, filename)
 
 print("Downloaded:", filename)
 ```
+
+```{python}
+word = "computation"
+vowels = "aeiou"
+
+for c in word:
+  if c in vowels:
+    print(f"{c} is a vowel")
+  else:
+    print(c,  "is not a vowel")
+```
+
+```{python}
+print("----------------------")
+
+```

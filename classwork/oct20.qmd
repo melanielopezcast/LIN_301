@@ -1,0 +1,81 @@
+```{python}
+import pandas as pd
+
+fresh_df = pd.DataFrame({
+    "language": ["Latin", "Greek", "Sanskrit", "Finnish"],
+    "family":   ["Indo-European", "Indo-European", "Indo-European", "Uralic"],
+    "speakers_millions": [0, 0, 0, 6],
+    "location": ["Italy", "Greece", "India", "Finland"]
+})
+
+print(fresh_df)
+fresh_df["language"]           # Series
+fresh_df[["language","family"]] # DataFrame
+```
+
+```{python}
+import pandas as pd
+
+eng_vowels = pd.DataFrame({
+    "symbol": ["i", "ɪ", "e", "ɛ", "æ", "u", "ʊ", "o", "ɔ", "ɑ", "ʌ", "ə"],
+    "height": [
+        "high",   # i
+        "high",   # ɪ
+        "mid",    # e
+        "mid",    # ɛ
+        "low",    # æ
+        "high",   # u
+        "high",   # ʊ
+        "mid",    # o
+        "mid",    # ɔ
+        "low",    # ɑ
+        "mid",    # ʌ
+        "mid"     # ə
+    ],
+    "backness": [
+        "front",   # i
+        "front",   # ɪ
+        "front",   # e
+        "front",   # ɛ
+        "front",   # æ
+        "back",    # u
+        "back",    # ʊ
+        "back",    # o
+        "back",    # ɔ
+        "back",    # ɑ
+        "central", # ʌ
+        "central"  # ə
+    ],
+    "tense": [
+        True,   # i
+        False,  # ɪ
+        True,   # e
+        False,  # ɛ
+        False,  # æ
+        True,   # u
+        False,  # ʊ
+        True,   # o
+        False,  # ɔ
+        True,   # ɑ
+        False,  # ʌ
+        False   # ə
+    ],
+    "rounded": [
+        False,  # i
+        False,  # ɪ
+        False,  # e
+        False,  # ɛ
+        False,  # æ
+        True,   # u
+        True,   # ʊ
+        True,   # o
+        True,   # ɔ
+        False,  # ɑ
+        False,  # ʌ
+        False   # ə
+    ],
+})
+
+eng_vowels
+
+```
