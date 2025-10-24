@@ -1,0 +1,55 @@
+```{python}
+import pandas as pd
+
+url = "https://github.com/phoible/dev/blob/master/data/phoible.csv?raw=true"
+df = pd.read_csv(url, low_memory=False)
+df.head()
+```
+
+```{python}
+
+import pandas as pd
+import numpy as np
+import re
+
+# 1) Identify "feature-like" columns (only punctuation +, -, 0, commas, spaces after stripping)
+def is_feature_like(series, sample_n=300):
+    s = series.dropna().astype(str).str.strip()
+    if len(s) == 0:
+        return False
+    if len(s) > sample_n:
+        s = s.sample(sample_n, random_state=0)
+    # allow only + - 0 , and whitespace
+    return s.str.match(r'^[\s,\+\-0]+$').all()
+
+feature_cols = [c for c in df.columns if df[c].dtype == "object" and is_feature_like(df[c])]
+print(feature_cols)
+
+# 2) Normalize strings -> booleans: True if ANY '+' present; else False
+def plus_any_to_bool(x):
+    if pd.isna(x):
+        return False
+    if isinstance(x, (bool, np.bool_)):
+        return bool(x)
+    s = str(x).strip()
+    if s == "" or s == "0":
+        return False
+    # split on commas/spaces; True if any token has '+'
+    return any('+' in tok for tok in re.split(r'[,\s]+', s) if tok != "")
+
+df[feature_cols] = df[feature_cols].map(plus_any_to_bool).astype("boolean")
+
+# Confirm that it works: feature columns should now be True/False (nullable boolean)
+df[["tone","nasal","continuant","delayedRelease"]].dtypes
+df[["tone","nasal","continuant","delayedRelease"]].head(3)
+```
+
+```{python}
+print("Number of rows and columns:", df.shape)
+print("\nColumn names:")
+print(df.columns.tolist())
+
+print("\nIndex type:")
+print(type(df.index))
+print(df.index)
+```
