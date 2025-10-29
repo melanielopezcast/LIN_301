@@ -1,3 +1,5 @@
+**Setup, Load, and Clean**
+
 ```{python}
 import pandas as pd
 
@@ -44,12 +46,144 @@ df[["tone","nasal","continuant","delayedRelease"]].dtypes
 df[["tone","nasal","continuant","delayedRelease"]].head(3)
 ```
 
+**Step 1 - Inspect the DataFrame**
+
 ```{python}
 print("Number of rows and columns:", df.shape)
-print("\nColumn names:")
+
+print("Column names:")
 print(df.columns.tolist())
 
-print("\nIndex type:")
+print("Index type:")
 print(type(df.index))
 print(df.index)
 ```
+
+**Step 2 - Basic Exploration**
+
+```{python}
+import pandas as pd
+
+num_languages = df["LanguageName"].nunique()
+print("Number of distinct languages:", num_languages)
+
+inventory_sizes = df.groupby("LanguageName")["Phoneme"].nunique().sort_values(ascending=False)
+largest_inventory = inventory_sizes.head(1)
+print("Language with the largest inventory:")
+print(largest_inventory)
+
+vowels_df = df[df["SegmentClass"] == "vowel"]
+print(vowels_df[["LanguageName", "Phoneme", "SegmentClass"]].head(10))
+print(f"\nNumber of vowel rows: {len(vowels_df)}")
+
+tone_langs = df.groupby("LanguageName")["tone"].any()
+num_tone_langs = tone_langs.sum()
+print("Number of unique tone languages:", num_tone_langs)
+
+# Traditional natural classes using PHOIBLE boolean features
+nat_classes = {
+    "stop": (df["continuant"] == False) & (df["delayedRelease"] == False),
+    "affricate": (df["continuant"] == False) & (df["delayedRelease"] == True),
+    "fricative": (df["continuant"] == True) & (df["delayedRelease"] == True),
+    "nasal": (df["consonantal"] == True) & (df["continuant"] == False) & (df["nasal"] == True),
+    "liquid": (df["approximant"] == True) & (df["consonantal"] == True),
+    "glide": (df["approximant"] == True) & (df["syllabic"] == False),
+    "tap": df["tap"] == True,
+    "vowel": (df["approximant"] == True) & (df["syllabic"] == True),
+}
+
+nat_counts = {name: mask.sum() for name, mask in nat_classes.items()}
+nat_counts = dict(sorted(nat_counts.items(), key=lambda x: x[1], reverse=True))
+for name, count in nat_counts.items():
+  print(f"{name}: {count}")
+  
+most_common = max(nat_counts, key=nat_counts.get)
+print(f"\nThe most common manner of articulation is: {most_common}")
+```
+
+**Step 3 - Derived Columns**
+
+```{python}
+df["IsVowel"] = df["SegmentClass"] == "vowel"
+df["PhonemeLength"] = df["Phoneme"].astype(str).str.len()
+df_new = df[["LanguageName", "Phoneme", "SegmentClass", "IsVowel", "PhonemeLength"]]
+print(df_new.head(10))
+
+```
+
+**Step 4 - Focus on One Language**
+
+```{python}
+import pandas as pd
+
+# Pick a language
+lang = "Korean"
+
+# Filter DataFrame for that language
+df_lang = df[df["LanguageName"] == lang]
+
+# --- Define natural classes and places again (so it's in this scope) ---
+nat_classes = {
+    "stop": (df["continuant"] == False) & (df["delayedRelease"] == False),
+    "affricate": (df["continuant"] == False) & (df["delayedRelease"] == True),
+    "fricative": (df["continuant"] == True) & (df["delayedRelease"] == True),
+    "nasal": (df["consonantal"] == True) & (df["continuant"] == False) & (df["nasal"] == True),
+    "liquid": (df["approximant"] == True) & (df["consonantal"] == True),
+    "glide": (df["approximant"] == True) & (df["syllabic"] == False),
+    "tap": df["tap"] == True,
+    "vowel": (df["approximant"] == True) & (df["syllabic"] == True),
+}
+
+places = {
+    "bilabial": (df["labial"] == True) & (df["labiodental"] == False),
+    "labiodental": (df["labiodental"] == True),
+    "dental": (df["coronal"] == True) & (df["anterior"] == True) & (df["distributed"] == False),
+    "alveolar": (df["coronal"] == True) & (df["anterior"] == True) & (df["distributed"] == True),
+    "postalveolar": (df["coronal"] == True) & (df["anterior"] == False) & (df["distributed"] == True),
+    "retroflex": (df["coronal"] == True) & (df["anterior"] == False) & (df["distributed"] == False),
+    "palatal": (df["dorsal"] == True) & (df["high"] == True) & (df["front"] == True),
+    "velar": (df["dorsal"] == True) & (df["back"] == True) & (df["high"] == False),
+    "uvular": (df["dorsal"] == True) & (df["back"] == True) & (df["low"] == True),
+    "pharyngeal": (df["retractedTongueRoot"] == True),
+    "glottal": ((df["spreadGlottis"] == True) | (df["constrictedGlottis"] == True)) &
+               (df["SegmentClass"].astype(str).str.lower() != "vowel")
+}
+
+# --- Basic counts ---
+total = len(df_lang)
+num_vowels = df_lang["IsVowel"].sum()
+num_cons = total - num_vowels
+
+print(f"Language: {lang}")
+print(f"Total segments: {total}")
+print(f"Vowels: {num_vowels}")
+print(f"Consonants: {num_cons}")
+
+# --- Find most frequent pl
+place_counts = {}
+for name, condition in places.items():
+    # Rebuild mask for df_lang using df_lang columns
+    mask = df_lang.index.isin(df[condition].index)
+    place_counts[name] = df_lang[mask].shape[0]
+
+manner_counts = {}
+for name, condition in nat_classes.items():
+    mask = df_lang.index.isin(df[condition].index)
+    manner_counts[name] = df_lang[mask].shape[0]
+
+# --- Results ---
+print("\nMost frequent places of articulation:")
+print(sorted(place_counts.items(), key=lambda x: x[1], reverse=True)[:5])
+
+print("\nMost frequent manners of articulation:")
+print(sorted(manner_counts.items(), key=lambda x: x[1], reverse=True)[:5])
+
+
+df_lang.to_csv("phoible_output.csv", index=False)
+print("Exported Korean data to phoible_output.csv")
+
+```
+
+**Reflection**
+
+For Korean, the number of consonants and vowels is the equal and balanced, which was surprising to me. The most common manners of articulation were vowels, stops, and fricatives while the most common places of articulation were bilabial, palatal, and dental. This exploration will be useful in my analyzing of Cuban Spanish and phonological structure in casual speech/real orthographic usage.
