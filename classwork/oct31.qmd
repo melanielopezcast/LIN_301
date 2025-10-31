@@ -1,0 +1,105 @@
+```{python}
+list = ["eeny", "meeny", "miney", "mo"]
+
+for i in list:
+  for c in i:
+    print(c)
+```
+
+```{python}
+sentences = [
+    ["the", "cat", "sleeps"],
+    ["the", "dog", "runs"],
+    ["the", "bird", "flies"]
+]
+
+for sentence in sentences:
+  for w in sentence:
+    print(w)
+```
+
+```{python}
+list1 = ["a", "b", "c", "d"]
+list2 = [0, 1, 2, 3]
+list3 = ["alpha", "beta", "gamma", "delta"]
+list4 = ["fee", "fie", "fo", "fum"]
+
+
+list2dict = {i: [j, k, l] for i, j, k, l in zip(list1, list2, list3, list4)}
+
+list2dict
+```
+
+```{python}
+words = ["zombie", "ghoul", "ghost", "vampire"]
+begins_with_g = [False, True, True, False]
+rhymes_with_most = [False, False, True, False]
+
+length = []
+for word in words:
+  length.append(len(word))
+print(length)
+
+wordslist = {i: [j, k, l] for i, j, k, l in zip(words, begins_with_g, rhymes_with_most, length)}
+wordslist
+```
+
+```{python}
+list = ["eeny", "meeny", "miney", "mo"]
+list[0][0]
+
+sentences = [
+    ["the", "cat", "sleeps"],
+    ["the", "dog", "runs"],
+    ["the", "bird", "flies"]
+]
+sentences[0][0]
+
+students = {
+    "Alice": {"quiz": 9, "homework": 10, "final": 8},
+    "Ben": {"quiz": 7, "homework": 9, "final": 10}
+}
+
+students["Alice"]["quiz"]
+```
+
+```{python}
+import pandas as pd
+consonants = {
+    "p": {"voice": False, "place": "bilabial", "manner": "stop"},
+    "t": {"voice": False, "place": "alveolar", "manner": "stop"},
+    "k": {"voice": False, "place": "velar", "manner": "stop"}
+}
+df = pd.DataFrame(consonants)
+df
+```
+
+```{python}
+import pandas as pd
+consonants = {
+    "p": {"voice": False, "place": "bilabial", "manner": "stop"},
+    "t": {"voice": False, "place": "alveolar", "manner": "stop"},
+    "k": {"voice": False, "place": "velar", "manner": "stop"}
+}
+
+df = pd.DataFrame(consonants).T.reset_index(names="phoneme")
+df
+```
+
+```{python}
+phonemes = ["p", "b", "t", "d", "k", "g"]
+voicing  = [False, True, False, True, False, True]
+place    = ["bilabial", "bilabial", "alveolar", "alveolar", "velar", "velar"]
+manner   = ["stop"] * 6
+
+new_dict = {}
+for i, j, k, l in zip(phonemes,voicing,place,manner):
+  new_dict[i] = {
+    "voicing": j,
+    "place": k,
+    "manner": l
+}
+
+df = pd.DataFrame(new_dict).T.reset_index(names="phoneme")
+df
+```
