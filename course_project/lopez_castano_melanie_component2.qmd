@@ -1,0 +1,74 @@
+```{python}
+with open("cuban.txt", "r", encoding="utf-8") as f:
+    cuban_text = f.read()
+```
+
+```{python}
+import re
+cuban_words = re.split(r"[\s\W]+", cuban_text)
+cuban_words = [w for w in cuban_words if w]
+cuban_words = [w.lower() for w in cuban_words]
+cuban_words = re.findall(r"[a-záéíóúüñ]+", cuban_text)
+
+```
+
+```{python}
+import pandas as pd
+from collections import Counter
+
+def word_freq(words):
+    freq = {}
+    for w in words:
+        freq[w] = freq.get(w, 0) + 1
+    return freq
+cuban_freq = word_freq(cuban_words)
+
+words = ['que', 'qué', 'los', 'loh', 'lo', 'bola', 'vola','volá', 'bolá', 'asere', 'acere', 'pescao', 'pescado', 'mantecao', 'mantecado', 'cuidao', 'cuidado', 'melao', 'complicado', 'complicao']
+freq_data = {w: cuban_freq.get(w, 0) for w in words}
+
+ao_forms = [w for w in cuban_words if re.search(r'ao$', w)]
+ado_forms = [w for w in cuban_words if re.search(r'ado$', w)]
+
+print("Words ending in -ao:", set(ao_forms))
+print("Words ending in -ado:", set(ado_forms))
+
+df = pd.DataFrame(list(freq_data.items()), columns=['word', 'frequency'])
+
+# --- Add extra columns if you want ---
+df['length'] = df['word'].apply(len)
+df['has_accent'] = df['word'].apply(lambda x: bool(re.search(r'[áéíóú]', x)))
+df['ado_to_ao_shift'] = df['word'].apply(lambda w: 1 if re.search(r'ao$', w) else 0)
+
+# --- Sort by frequency ---
+df = df.sort_values(by='frequency', ascending=False)
+
+print(df)
+df.to_csv("lopez_castano_melanie_component2.csv", index=False, encoding="utf-8")
+
+```
+
+### **Project Summary**
+
+**Raw file:**
+The raw data came from *El Corpus del Español* (<https://www.corpusdelespanol.org/>), specifically from a subcorpus of Cuban Spanish texts. I downloaded a plain text file containing word tokens from conversational or informal Cuban speech. I chose a variety of texts ranging from political commentary to social media postings to get a wide range of language use.
+
+**Cleaning steps:**
+I cleaned the text by converting everything to lowercase, removing punctuation, trimming extra whitespace, and tokenizing it into individual words. This allowed for consistent frequency counts and pattern matching (e.g., words ending in *-ao* vs. *-ado*). I kept accent marks and distinguished items like "qué" and "que"
+
+**Output CSV:**\
+
+The final CSV contains the following columns:
+
+-   **word** – the token being analyzed
+
+-   **frequency** – number of times it appears in the corpus
+
+-   **length** – character count of each word
+
+-   **has_accent** – marks whether the word includes an accent mark
+
+-   **ado_to_ao_shift** – flags whether the word ends in *-ao* (a common Cuban spelling reduction)
+
+There are roughly 15 target rows in the table.\
+
+An interesting observation is that several informal or colloquial spellings (like **pescao**, **melao**, **mantecao**, **cuidao**) appear alongside their standard forms (**pescado**, **mantecado**, **cuidado**). This highlights how Cuban Spanish often drops the intervocalic **/d/** in **-ado** endings during casual speech.
