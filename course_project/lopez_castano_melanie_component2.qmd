@@ -49,11 +49,9 @@ df.to_csv("lopez_castano_melanie_component2.csv", index=False, encoding="utf-8")
 
 ### **Project Summary**
 
-**Raw file:**
-The raw data came from *El Corpus del Español* (<https://www.corpusdelespanol.org/>), specifically from a subcorpus of Cuban Spanish texts. I downloaded a plain text file containing word tokens from conversational or informal Cuban speech. I chose a variety of texts ranging from political commentary to social media postings to get a wide range of language use.
+**Raw file:** The raw data came from *El Corpus del Español* (<https://www.corpusdelespanol.org/>), specifically from a subcorpus of Cuban Spanish texts. I downloaded a plain text file containing word tokens from conversational or informal Cuban speech. I chose a variety of texts ranging from political commentary to social media postings to get a wide range of language use.
 
-**Cleaning steps:**
-I cleaned the text by converting everything to lowercase, removing punctuation, trimming extra whitespace, and tokenizing it into individual words. This allowed for consistent frequency counts and pattern matching (e.g., words ending in *-ao* vs. *-ado*). I kept accent marks and distinguished items like "qué" and "que"
+**Cleaning steps:** I cleaned the text by converting everything to lowercase, removing punctuation, trimming extra whitespace, and tokenizing it into individual words. This allowed for consistent frequency counts and pattern matching (e.g., words ending in *-ao* vs. *-ado*). I kept accent marks and distinguished items like "qué" and "que"
 
 **Output CSV:**\
 

@@ -1,0 +1,161 @@
+```{python}
+import spacy
+nlp_en = spacy.load("en_core_web_sm")
+
+doc = nlp_en("The children ran quickly to their houses.")
+for token in doc:
+    print(token.text, token.lemma_, token.pos_)
+```
+
+```{python}
+import spacy
+from nltk.corpus import wordnet as wn
+from nltk.corpus.reader.wordnet import NOUN, VERB, ADJ, ADV
+
+# Load spaCy
+nlp = spacy.load("en_core_web_sm")
+
+# Sentence with both noun and verb "bear"
+text = "The bears bear their burdens bravely."
+doc = nlp(text)
+
+# Map spaCy POS tags to WordNet POS tags -- this is a **function**, we'll get to these soon
+def get_wordnet_pos(spacy_pos):
+    if spacy_pos.startswith("N"):
+        return NOUN
+    elif spacy_pos.startswith("V"):
+        return VERB
+    elif spacy_pos.startswith("J"):
+        return ADJ
+    elif spacy_pos.startswith("R"):
+        return ADV
+    return None
+
+# Loop through tokens and look up WordNet entries
+for token in doc:
+    wn_pos = get_wordnet_pos(token.tag_)
+    lemma = token.lemma_.lower()
+
+    if wn_pos and not token.is_stop and not token.is_punct:
+        synsets = wn.synsets(lemma, pos=wn_pos)
+        print(f"\n{token.text.upper()} ({token.pos_}) → lemma: {lemma}")
+        for s in synsets[:3]:  # show just the first 3 senses
+            print(f"  - {s.definition()}  [examples: {s.examples()}]")
+```
+
+```{python}
+import spacy
+from spacy.matcher import PhraseMatcher
+from nltk.corpus import wordnet as wn
+
+nlp = spacy.load("en_core_web_sm")
+
+# WordNet helpers (via NLTK) – returns only verb synsets
+def verb_senses(word):
+    return wn.synsets(word, pos='v')  # verb synsets only
+
+# Collects all (recursive) hyponyms for a verb synset (troponyms in WN terms).
+# This function recursively collects all *hyponyms* (a.k.a. “troponyms” for verbs)
+# of a given synset. A hyponym is a more *specific* instance of an action.
+# Example: the verb “attack.v.01” has hyponyms like “bomb.v.01”, “invade.v.01”, etc.
+def all_verb_hyponyms(root):
+      seen, stack = set(), [root]
+    while stack:
+        cur = stack.pop()
+        if cur in seen:
+            continue
+        seen.add(cur)
+        # For verbs, .hyponyms() are the troponyms
+        stack.extend(cur.hyponyms())
+    return {s for s in seen if s.pos() == 'v'}
+
+# This function extracts lemma names (the “canonical” word forms)
+# from a set of synsets, e.g. 'strike.v.01' → ['strike', 'hit', 'smite', ...].
+# Optionally filters out multiword expressions like "shoot_down".
+def lemmas_from_synsets(synsets, keep_multiword=False):
+    out = set()
+    for s in synsets:
+        for lem in s.lemmas():
+            name = lem.name().lower()
+            if not keep_multiword and "_" in name:
+                continue
+            out.add(name.replace("_", " "))
+    return out
+
+# Build a violence lexicon from WordNet using a few intuitive seeds
+seed_verbs = ["attack", "assault", "hit", "strike", "punch", "kick", "stab", "shoot", "beat"]
+base_synsets = []
+for w in seed_verbs:
+    ss = verb_senses(w)
+    if ss:
+        # take the most “central” sense by picking the one with most hyponyms
+        ss_scored = sorted(ss, key=lambda s: len(s.hyponyms()), reverse=True)
+        base_synsets.append(ss_scored[0])
+
+# expand via hyponyms (troponyms)
+expanded = set()
+for s in base_synsets:
+    expanded |= all_verb_hyponyms(s)
+
+# collect lemmas (single-token by default)
+violent_verb_lemmas = sorted(lemmas_from_synsets(expanded, keep_multiword=False) | set(seed_verbs))
+print(f"{len(violent_verb_lemmas)} violent verb lemmas (sample):", violent_verb_lemmas[:25])
+
+# 4) spaCy PhraseMatcher by lemma — IMPORTANT: run full pipeline on patterns
+matcher = PhraseMatcher(nlp.vocab, attr="LEMMA")
+patterns = list(nlp.pipe(violent_verb_lemmas))  # not make_doc: we need lemmas
+matcher.add("VIOLENCE", patterns)
+```
+
+```{python}
+import spacy
+from spacy.matcher import PhraseMatcher
+
+nlp = spacy.load("en_core_web_sm")
+
+violent_vs = ['assail', 'assault', 'atom-bomb', 'atomise', 'atomize', 'attack', 'backbite', 'backhand', 'bait', 'bastinado', 'bat', 'batter', 'bayonet', 'beak', 'beat', 'beef', 'beetle', 'beleaguer', 'bellyache', 'bemoan', 'beset', 'besiege', 'best', 'better', 'bewail', 'birdie', 'bitch', 'blast', 'bleat', 'blindside', 'blitz', 'blockade', 'bogey', 'bomb', 'bombard', 'bounce', 'break', 'buffet', 'bulldog', 'bunker', 'bunt', 'bust', 'butt', 'cannon', 'cannonade', 'carom', 'carry', 'charge', 'cheat', 'checkmate', 'chicane', 'chip', 'chop', 'chouse', 'circumvent', 'clap', 'clobber', 'clout', 'coldcock', 'complain', 'connect', 'counterattack', 'counterstrike', 'crab', 'cream', 'croak', 'croquet', 'crump', 'crush', 'cuff', 'dab', 'deck', 'declaim', 'deplore', 'desecrate', 'dishonor', 'dishonour', 'dive-bomb', 'double', 'down', 'dribble', 'drive', 'drub', 'dump', 'dunk', 'eagle', 'ebb', 'eliminate', 'exceed', 'firebomb', 'floor', 'fly', 'foul', 'full', 'gang-rape', 'gas', 'glide-bomb', 'gnarl', 'gripe', 'grizzle', 'grouch', 'ground', 'grouse', 'grumble', 'hammer', 'headbutt', 'heel', 'hen-peck', 'hew', 'hit', 'hole', 'holler', 'hook', 'hydrogen-bomb', 'immobilise', 'immobilize', 'infest', 'invade', 'inveigh', 'jab', 'jockey', 'jump', 'kick', 'kill', 'knap', 'knife', 'knock', 'knuckle', 'kvetch', 'lament', 'lash', 'lick', 'loft', 'master', 'mate', 'molest', 'murmur', 'mutter', 'nag', 'nuke', 'occupy', 'out-herod', 'outbrave', 'outcry', 'outdo', 'outdraw', 'outfight', 'outflank', 'outfox', 'outgeneral', 'outgo', 'outgrow', 'outmaneuver', 'outmanoeuvre', 'outmarch', 'outmatch', 'outpace', 'outperform', 'outplay', 'outpoint', 'outrage', 'outrange', 'outroar', 'outsail', 'outscore', 'outsell', 'outshine', 'outshout', 'outsmart', 'outstrip', 'outwear', 'outweigh', 'outwit', 'overcome', 'overmaster', 'overpower', 'overreach', 'overrun', 'overwhelm', 'paste', 'pat', 'pattern-bomb', 'peck', 'pelt', 'pepper', 'percuss', 'pick', 'pip', 'pitch', 'plain', 'play', 'plug', 'poniard', 'pop', 'profane', 'protest', 'pull', 'punch', 'putt', 'quetch', 'racket', 'raid', 'rail', 'rap', 'rape', 'ravish', 'reassail', 'repine', 'report', 'retaliate', 'rout', 'rush', 'savage', 'sclaff', 'scold', 'scoop', 'screw', 'set', 'shaft', 'shame', 'shank', 'shell', 'shoot', 'sic', 'sideswipe', 'single', 'skip-bomb', 'slam-dunk', 'slap', 'sledge', 'sledgehammer', 'slice', 'smash', 'snag', 'snap', 'snick', 'spread-eagle', 'spreadeagle', 'spur', 'squawk', 'stab', 'steamroll', 'steamroller', 'storm', 'strafe', 'strike', 'stroke', 'subdue', 'submarine', 'surmount', 'surpass', 'surprise', 'surround', 'tap', 'teargas', 'thrash', 'thresh', 'tip', 'toe', 'top', 'torpedo', 'triple', 'trounce', 'trump', 'undercut', 'upstage', 'urticate', 'vanquish', 'violate', 'volley', 'whang', 'whine', 'whip', 'whomp', 'worst', 'yammer', 'yawp', 'zap']
+
+patterns = [nlp(v) for v in violent_vs]
+matcher = PhraseMatcher(nlp.vocab, attr="LEMMA")
+doc = nlp("They kissed, destroyed, punched, kicked, and attacked the intruder before fleeing.")
+matcher.add("VIOLENCE", patterns)
+[(doc[s:e].text, doc[s:e].lemma_) for _, s, e in matcher(doc)]
+```
+
+```{python}
+import spacy
+
+nlp_en = spacy.load("en_core_web_sm")
+nlp_fr = spacy.load("fr_core_news_sm")
+nlp_es = spacy.load("es_core_news_sm")
+nlp_de = spacy.load("de_core_news_sm")
+
+text_en = "The students have analyzed Proto-Indo-European roots."
+text_fr = "Les étudiants ont analysé les racines proto-indo-européennes."
+text_es = "Los estudiantes analizaron las raíces protoindoeuropeas."
+text_de = "Die Studenten analysierten die indogermanischen Wurzeln."
+
+for lang, nlp, text in [("English", nlp_en, text_en), ("French", nlp_fr, text_fr), ("Spanish", nlp_es, text_es), ("German", nlp_de, text_de)]:
+    doc = nlp(text)
+    print(f"\n {lang} Tokens:")
+    print([t.text for t in doc])
+```
+
+```{python}
+import spacy
+
+nlp_en = spacy.load("en_core_web_sm")
+nlp_fr = spacy.load("fr_core_news_sm")
+nlp_es = spacy.load("es_core_news_sm")
+nlp_de = spacy.load("de_core_news_sm")
+
+text_en = "It is very cold outside."
+text_fr = "Il fait très froid dehors."
+text_es = "Hace mucho frío afuera."
+text_de = "Es ist sehr kalt draußen."
+
+for lang, nlp, text in [("English", nlp_en, text_en), ("French", nlp_fr, text_fr), ("Spanish", nlp_es, text_es), ("German", nlp_de, text_de)]:
+    doc = nlp(text)
+    print(f"\n {lang} Tokens:")
+    print([t.text for t in doc])
+```
