@@ -137,8 +137,9 @@ text_de = "Die Studenten analysierten die indogermanischen Wurzeln."
 
 for lang, nlp, text in [("English", nlp_en, text_en), ("French", nlp_fr, text_fr), ("Spanish", nlp_es, text_es), ("German", nlp_de, text_de)]:
     doc = nlp(text)
-    print(f"\n {lang} Tokens:")
-    print([t.text for t in doc])
+    print(f"\n {lang} Lemmas:")
+    for token in doc:
+        print(token.text, "→", token.lemma_, token.pos_)
 ```
 
 ```{python}
@@ -156,6 +157,87 @@ text_de = "Es ist sehr kalt draußen."
 
 for lang, nlp, text in [("English", nlp_en, text_en), ("French", nlp_fr, text_fr), ("Spanish", nlp_es, text_es), ("German", nlp_de, text_de)]:
     doc = nlp(text)
-    print(f"\n {lang} Tokens:")
-    print([t.text for t in doc])
+    print(f"\n {lang} Lemmas:")
+    for token in doc:
+        print(token.text, "→", token.lemma_, token.pos_)
+```
+
+```{python}
+import pandas as pd
+
+def lemma_table(nlp, text, language):
+    doc = nlp(text)
+    data = [(t.text, t.lemma_, t.pos_) for t in doc if t.is_alpha]
+    return pd.DataFrame(data, columns=["word", "lemma", "pos"]).assign(language=language)
+
+df_all = pd.concat([
+    lemma_table(nlp_en, text_en, "English"),
+    lemma_table(nlp_fr, text_fr, "French"),
+    lemma_table(nlp_es, text_es, "Spanish"),
+    lemma_table(nlp_de, text_de, "German")
+])
+
+df_all
+```
+
+```{python}
+text_en = "Whereas recognition of the inherent dignity and of the equal and inalienable rights of all members of the human family is the foundation of freedom, justice and peace in the world, the peoples of the United Nations have reaffirmed their faith in fundamental human rights and in the dignity and worth of the human person. They have resolved to promote social progress and better standards of life in larger freedom."
+
+text_es = "Considerando que el reconocimiento de la dignidad intrínseca y de los derechos iguales e inalienables de todos los miembros de la familia humana constituye la base de la libertad, la justicia y la paz en el mundo, los pueblos de las Naciones Unidas han reafirmado su fe en los derechos humanos fundamentales y en la dignidad y el valor de la persona humana. Han decidido promover el progreso social y elevar el nivel de vida dentro de una libertad más amplia."
+
+from collections import Counter
+import spacy
+
+nlp_en = spacy.load("en_core_web_sm")
+nlp_es = spacy.load("es_core_news_sm")
+
+def is_def_det(tok, include_contractions=False, lang="en"):
+# True for tokens that are definite determiners
+  if tok.pos_ == "DET" and "Def" in tok.morph.get("Definite"):
+    return True
+  if include_contractions and lang == "es" and tok.text.lower() in {"al", "del"}:
+    return True
+    return False
+
+def def_det_stats(nlp, text, lang_label, include_contractions=False):
+  doc = nlp(text)
+  # word-like tokens only for the denominator
+  word_tokens = [t for t in doc if t.is_alpha]
+  total = len(word_tokens)
+  def_dets = [t.text for t in doc if is_def_det(t, include_contractions, lang=lang_label[:2].lower())]
+  n = len(def_dets)
+  rate = (n / total) if total else 0.0
+  print(f"{lang_label}: {n} definite determiners / {total} word tokens ({rate:.2%})")
+  print("Top forms:", Counter(w.lower() for w in def_dets).most_common())
+
+# Run (set include_contractions=True if you want to count 'al'/'del' in Spanish)
+def_det_stats(nlp_en, text_en, "English", include_contractions=False)
+def_det_stats(nlp_es, text_es, "Spanish", include_contractions=False)
+```
+
+```{python}
+text_fr = "Considérant que la reconnaissance de la dignité inhérente et des droits égaux et inaliénables de tous les membres de la famille humaine constitue le fondement de la liberté, de la justice et de la paix dans le monde, les peuples des Nations Unies ont réaffirmé leur foi dans les droits fondamentaux de l’homme, dans la dignité et la valeur de la personne humaine. Ils se sont engagés à favoriser le progrès social et à élever le niveau de vie dans une liberté plus grande."
+
+text_de = "Da die Anerkennung der angeborenen Würde und der gleichen und unveräußerlichen Rechte aller Mitglieder der menschlichen Familie die Grundlage der Freiheit, der Gerechtigkeit und des Friedens in der Welt bildet, haben die Völker der Vereinten Nationen ihren Glauben an die grundlegenden Menschenrechte sowie an die Würde und den Wert der menschlichen Person erneut bekräftigt. Sie haben beschlossen, sozialen Fortschritt zu fördern und den Lebensstandard in größerer Freiheit zu erhöhen."
+
+nlp_fr = spacy.load("fr_core_news_sm")
+nlp_de = spacy.load("de_core_news_sm")
+
+def_det_stats(nlp_fr, text_fr, "French", include_contractions=False)
+def_det_stats(nlp_de, text_de, "German", include_contractions=False)
+```
+
+```{python}
+# pip install pycountry
+import pycountry
+from nltk.corpus import wordnet as wn
+# List languages available via OMW (IDs)
+codes = sorted(wn.langs())
+
+for code in codes:
+    lang = pycountry.languages.get(alpha_3=code)
+    if lang:
+        print(f"{code} → {lang.name}")
+    else:
+        print(f"{code} → (not found)")
 ```

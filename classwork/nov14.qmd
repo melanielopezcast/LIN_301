@@ -1,0 +1,132 @@
+```{python}
+def plus_two(number):
+    '''
+    This function adds 2 to the input.
+    '''
+    output = number + 2
+    return(output)
+```
+
+```{python}
+plus_two(1)
+plus_two(5)
+```
+
+```{python}
+def add_and_mult(a, b):
+    '''
+    This function adds a to b,
+    and multiplies a and b.
+    '''
+    add = a + b
+    mult = a * b
+    return(add, mult)
+```
+
+```{python}
+add_and_mult(4, 6)
+```
+
+```{python}
+def initialize(full_name):
+    '''
+    Return the person's initials.
+    '''
+    name_parts = full_name.split(" ")
+    initial_list = [name[0]+"." for name in name_parts]
+
+    output = ""
+    for initial in initial_list:
+        output = output + initial
+
+    return(output)
+```
+
+```{python}
+initialize("Louisa May Alcott")
+# 'L.M.A.'
+
+initialize("Edgar Allan Poe")
+# 'E.A.P.'
+
+initialize("Jane Austen")
+# 'J.A.'
+
+initialize("Melanie Lopez-Castano")
+```
+
+```{python}
+pride = "pride_and_prejudice.txt"
+sense = "sense_and_sensibility.txt"
+
+
+def read_book(book):
+  book_file = open(book, mode = 'r')
+  book_lines = book_file.readlines()
+  clean_lines = [line.rstrip().lower() for line in book_lines]
+  output = [w for w in clean_lines if w]
+  return(output)
+
+read_book(pride)
+read_book(sense)
+```
+
+```{python}
+def read_book(path):
+    with open(path, mode="r", encoding="utf-8") as book_file:
+        book_lines = book_file.readlines()
+    clean_lines = [line.strip().lower() for line in book_lines]
+    
+    # Split each line into words and flatten the list
+    words = [word for line in clean_lines for word in line.split() if word]
+    return words
+
+alice = read_book("alice.txt")
+print(alice[:200])
+```
+
+```{python}
+import spacy
+from nltk.corpus import wordnet as wn
+from nltk.corpus.reader.wordnet import NOUN, VERB, ADJ, ADV
+
+# Load spaCy
+nlp = spacy.load("en_core_web_sm")
+
+# Sentence with both noun and verb "bear"
+
+# Map spaCy POS tags to WordNet POS tags -- this is a **function**, we'll get to these soon
+def get_wordnet_pos(spacy_pos):
+    if spacy_pos.startswith("N"):
+        return NOUN
+    elif spacy_pos.startswith("V"):
+        return VERB
+    elif spacy_pos.startswith("J"):
+        return ADJ
+    elif spacy_pos.startswith("R"):
+        return ADV
+    return None
+
+
+            
+def nlp_it(argument):
+  doc = nlp(text)
+  content_lemmas = [t.lemma_.lower() for t in doc
+                  if not (t.is_stop or t.is_punct or t.is_space or t.like_num)]
+  # Loop through tokens and look up WordNet entries
+  for token in doc:
+    wn_pos = get_wordnet_pos(token.tag_)
+    lemma = token.lemma_.lower()
+
+  if wn_pos and not token.is_stop and not token.is_punct:
+        synsets = wn.synsets(lemma, pos=wn_pos)
+        print(f"\n{token.text.upper()} ({token.pos_}) → lemma: {lemma}")
+        for s in synsets[:3]:  # show just the first 3 senses
+            print(f"  - {s.definition()}  [examples: {s.examples()}]")
+            
+
+```
+
+```{python}
+
+```
