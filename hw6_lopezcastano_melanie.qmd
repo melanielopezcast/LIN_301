@@ -1,0 +1,178 @@
+```{python}
+import spacy
+from nltk.corpus import wordnet as wn
+import pandas as pd
+import matplotlib.pyplot as plt
+import nltk
+
+nltk.download('wordnet')
+
+# Load spaCy model
+nlp = spacy.load("en_core_web_sm")
+```
+
+**Part 1: Tokenizing and Lemmatizing Text**
+
+```{python}
+with open("alice.txt", "r", encoding="utf-8") as f:
+  text = f.read()
+  
+doc = nlp(text)
+content_pos = {"NOUN", "VERB", "ADJ", "ADV"}
+lemmas = [
+  token.lemma_.lower()
+  for token in doc
+  if token.pos_ in content_pos and not token.is_stop and token.is_alpha
+]
+
+lemma_freq = Counter(lemmas)
+
+df = pd.DataFrame(lemma_freq.most_common(), columns=["lemma", "frequency"])
+pos_map = {}
+for token in doc:
+  if token.lemma_.lower() in lemma_freq and token.pos_ in content_pos:
+    pos_map.setdefault(token.lemma_.lower(), Counter())[token.pos_] += 1
+    
+df["POS"] = df["lemma"].map(lambda l: pos_map[l].most_common(1)[0][0])
+print(df.head(20))
+
+top10 = df.head(10)
+plt.figure(figsize=(10,6))
+plt.bar(top10["lemma"], top10["frequency"], color="skyblue")
+plt.xticks(rotation=45)
+plt.xlabel("Lemma")
+plt.ylabel("Frequency")
+plt.title("Top 10 most frequent content lemmas in Alice in Wonderland")
+plt.show()
+```
+
+**Part 2: WordNet Synset**
+
+```{python}
+top5 = df.head(5)['lemma'].tolist()
+
+print("Top 5 lemmas:", top5)
+print("\n==============================\n")
+
+for lemma in top5:
+    print(f"LEMMA: {lemma}")
+    synsets = wn.synsets(lemma)
+
+    if not synsets:
+        print("  No WordNet entries found.\n")
+        continue
+
+    for syn in synsets:
+        print(f"  ── Synset: {syn.name()}")
+        print(f"     • Definition: {syn.definition()}")
+
+        # Example sentences
+        examples = syn.examples()
+        if examples:
+            print(f"     • Examples:")
+            for ex in examples:
+                print(f"         - {ex}")
+        else:
+            print("     • Examples: None")
+
+        # Hypernyms (parent categories)
+        hypers = syn.hypernyms()
+        if hypers:
+            print("     • Hypernyms:")
+            for h in hypers:
+                print(f"         - {h.name()}")
+        else:
+            print("     • Hypernyms: None")
+
+        # Hyponyms (subcategories)
+        hypos = syn.hyponyms()
+        if hypos:
+            print("     • Hyponyms:")
+            for h in hypos:
+                print(f"         - {h.name()}")
+        else:
+            print("     • Hyponyms: None")
+
+        print()
+    print("----------------------------------------------------\n")
+```
+
+**Part 3: Semantic Similarity**
+
+```{python}
+pairs = [
+  ("say", "think"),
+  ("go", "work"),
+  ("know", "look"),
+  ("begin", "come"),
+  ("little", "thing")
+]
+
+def wup_similarity(w1, w2):
+    s1 = wn.synsets(w1)
+    s2 = wn.synsets(w2)
+    if not s1 or not s2:
+        return None
+    return s1[0].wup_similarity(s2[0])
+
+results = []
+for w1, w2 in pairs:
+    sim = wup_similarity(w1, w2)
+    results.append((w1, w2, sim))
+
+for w1, w2, score in results:
+    print(f"{w1}  ~  {w2}   →   Wu-Palmer similarity: {score}")
+```
+
+The Wu-Palmer similarity scores for my 5 word pairs fall between 0.22 and 0.33, showing relatively low semantic relativity across the pairs. The pairs with the highest scores were little \~ thing, which is very surprising as they are different parts of speech, know \~ look, and begin \~ come. I would think the latter 2 pairs would be more semantically related, so these results are surprising.
+
+**Part 4: Building a Semantic Field**
+
+```{python}
+motion_verbs = ["run", "walk", "jump", "climb", "crawl", "slide", "fly", "swim", "fall", "roll"]
+
+expanded_motion_verbs = set(motion_verbs)
+
+for w in motion_verbs:
+    synsets = wn.synsets(w, pos='v')  
+    for s in synsets:
+        for h in s.hyponyms():
+            for lemma in h.lemma_names():
+                expanded_motion_verbs.add(lemma.replace("_", " "))
+
+expanded_motion_verbs = sorted(expanded_motion_verbs)
+
+print("Original seed words:", len(motion_verbs))
+print("Total after WordNet expansion:", len(expanded_motion_verbs))
+print("New items added:", len(expanded_motion_verbs) - len(motion_verbs))
+print("\nExpanded list:")
+expanded_motion_verbs
+
+print("----------------------------------")
+
+def wup_first_sense(word1, word2):
+    syn1 = wn.synsets(word1, pos='v')
+    syn2 = wn.synsets(word2, pos='v')
+    if not syn1 or not syn2:
+        return None
+    return syn1[0].wup_similarity(syn2[0])
+
+similarities = []
+
+for i in range(len(expanded_motion_verbs)):
+    for j in range(i+1, len(expanded_motion_verbs)):
+        w1 = expanded_motion_verbs[i]
+        w2 = expanded_motion_verbs[j]
+        score = wup_first_sense(w1, w2)
+        if score is not None:
+            similarities.append(score)
+
+if similarities:
+    average_similarity = sum(similarities) / len(similarities)
+    print("Number of valid word pairs:", len(similarities))
+    print("Average Wu-Palmer similarity:", round(average_similarity, 3))
+else:
+    print("No valid similarity scores were computed.")
+```
+
+I am not seeing any obvious words missing from the expanded list, but there are lots of weird additions, like "concentrate" as a motion verb and "pussyfoot" as an addition at all.
