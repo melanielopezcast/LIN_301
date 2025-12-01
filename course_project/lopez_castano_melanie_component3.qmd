@@ -1,0 +1,103 @@
+**Part 1: Set Up**
+
+```{python}
+import pandas as pd
+import matplotlib.pyplot as plt
+import spacy
+import re
+
+df = pd.read_csv("lopez_castano_melanie_component2.csv")
+
+df.head()
+df.info()
+```
+
+**Part 2: Plan Your Analysis**
+
+In this analysis, I plan to look at orthographic and phonological changes in my Cuban Spanish dataset. Specifically, I'll be looking at -ado -\> -ao (pescado -\> pescao), -ados -\> -aos (cuidados -\> cuidaos), and other potential variations such as -ada -\> -aa (pesada -\> \*pesaa) and -adas -\> -aas (heladas -\> \*helaas). These are typically found in adjectives and nouns in Spanish. I also will be looking at accented vs. unaccented spellings (e.g., *qué* vs. *que*) to show differences in frequency. My main hypothesis is that unaccented spellings will be more frequent, since informal writing often omits written accents. I also expect reduced forms will appear more often than standard forms, reflecting well-documented Cuban Spanish lenition patterns.
+
+**Part 3: Analyze Your Data**
+
+```{python}
+#reduced form frequencies
+df["ado_to_ao"] = df["word"].apply(lambda x: 1 if re.search(r'ao$', x) else 0)
+
+df["ados_to_aos"] = df["word"].apply(lambda x: 1 if re.search(r'aos$', x) else 0)
+
+df["ada_to_aa"] = df["word"].apply(lambda x: 1 if re.search(r'aa$', x) else 0)
+
+df["adas_to_aas"] = df["word"].apply(lambda x: 1 if re.search(r'aas$', x) else 0)
+
+reduction_counts = {
+    "ado→ao": df["ado_to_ao"].sum(),
+    "ados→aos": df["ados_to_aos"].sum(),
+    "ada→aa": df["ada_to_aa"].sum(),
+    "adas→aas": df["adas_to_aas"].sum()
+}
+reduction_counts
+('----------------------------------------------------')
+
+#lemma
+nlp = spacy.load("es_core_news_sm")
+
+def get_lemma(word):
+    doc = nlp(word)
+    return doc[0].lemma_
+
+df["lemma"] = df["word"].apply(get_lemma)
+df.head()
+
+def is_reduced(w):
+    return any([
+        re.search(r'ao$', w),
+        re.search(r'aos$', w),
+        re.search(r'aa$', w),
+        re.search(r'aas$', w)
+    ])
+
+df["is_reduced"] = df["word"].apply(is_reduced)
+
+reduced_total = df[df["is_reduced"] == True]["frequency"].sum()
+unreduced_total = df[df["is_reduced"] == False]["frequency"].sum()
+
+freq_compare = {
+    "Reduced Forms (e.g., pescao)": reduced_total,
+    "Unreduced Forms (e.g., pescado)": unreduced_total
+}
+
+freq_compare
+
+('----------------------------------------------')
+#accented vs unaccented
+accent_freq = df.groupby("has_accent")["frequency"].sum()
+accent_freq.index = ["unaccented", "accented"]
+accent_freq
+
+df.to_csv("lopez_castano_melanie_component3.csv", index=False, encoding="utf-8")
+```
+
+**Part 4: Visualize**
+
+```{python}
+plt.figure(figsize=(8,5))
+plt.bar(reduction_counts.keys(), reduction_counts.values())
+plt.title("Frequency of Cuban Spanish Reduction Patterns")
+plt.xlabel("Reduction Type")
+plt.ylabel("Token Count")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+plt.figure(figsize=(7,5))
+plt.bar(freq_compare.keys(), freq_compare.values())
+plt.title("Frequency of Reduced vs. Standard Forms in Cuban Spanish")
+plt.ylabel("Total Frequency")
+plt.xticks(rotation=0)
+plt.tight_layout()
+plt.show()
+
+```
+
+**Part 5: Interpret**
+
+For this analysis, I asked how often Cuban Spanish shows reduced forms of adjectives and nouns, like pescado -\> pescao, as well as frequency of accented vs unaccented spellings in casual orthography. I used pandas for filtering and counting and spaCy to look at lemma forms of these words. The results showed more instances of singular reductions -ado -\> -ao than plural reductions like -ados -\> -aos, and no instances at all of the predicted -aa or -aas forms. The dataset contained far more unreduced standard forms than reduced ones, which may reflect the semi-formal nature of blog-style writing compared to casual texting or speech. I also found that unaccented spellings were more common than accented, supporting my theory of informal orthography omitting diacritic marking. For the final project, I would be interested in finding any additional tokens for patterned reduction, possibly through FaceBook/Twitter, and analyzing part of speech correspondence in these reduced forms.

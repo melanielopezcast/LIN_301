@@ -14,34 +14,143 @@ cuban_words = re.findall(r"[a-záéíóúüñ]+", cuban_text)
 
 ```{python}
 import pandas as pd
+import re
 from collections import Counter
+import spacy
+nlp = spacy.load("es_core_news_sm")
 
+# -----------------------------
+# 1. Basic frequency function
+# -----------------------------
 def word_freq(words):
     freq = {}
     for w in words:
         freq[w] = freq.get(w, 0) + 1
     return freq
-cuban_freq = word_freq(cuban_words)
 
-words = ['que', 'qué', 'los', 'loh', 'lo', 'bola', 'vola','volá', 'bolá', 'asere', 'acere', 'pescao', 'pescado', 'mantecao', 'mantecado', 'cuidao', 'cuidado', 'melao', 'complicado', 'complicao']
+cuban_freq = word_freq(cuban_words)   # cuban_words must already be defined
+
+
+# -------------------------------------
+# 2. Target words your instructor asked about
+# -------------------------------------
+words = [
+    'que', 'qué', 'los', 'loh', 'lo',
+    'bola', 'vola', 'volá', 'bolá',
+    'asere', 'acere',
+    'pescao', 'pescado',
+    'mantecao', 'mantecado',
+    'cuidao', 'cuidado',
+    'melao', 'cansado', 
+    'complicado', 'complicao', 'picado', 'picao', 'castro', 'fidel',
+    'estao', 'pesao', 'combinao', 'kagao', 'pegao', 'pasao', 'apretao', 'cacao', 'pelao', 'ansao', 'cuidaos', 'guardaos', 'ocupaos', 'estaos', 'reparaos', 'mataos', 'olvidaos'
+]
+
 freq_data = {w: cuban_freq.get(w, 0) for w in words}
 
-ao_forms = [w for w in cuban_words if re.search(r'ao$', w)]
-ado_forms = [w for w in cuban_words if re.search(r'ado$', w)]
 
-print("Words ending in -ao:", set(ao_forms))
-print("Words ending in -ado:", set(ado_forms))
+# ---------------------------------------------------
+# 3. AUTOMATIC SOUND-CHANGE PATTERN EXTRACTION
+# ---------------------------------------------------
+# (-ado → -ao), (-ada → -aa), (-ados → -aos), (-adas → -aas)
+ao_forms   = [w for w in cuban_words if re.search(r'ao$', w)]
+aa_forms   = [w for w in cuban_words if re.search(r'aa$', w)]
+aos_forms  = [w for w in cuban_words if re.search(r'aos$', w)]
+aas_forms  = [w for w in cuban_words if re.search(r'aas$', w)]
 
+# Final -s → -h (loh, mish, toah, etc.)
+final_h_forms = [w for w in cuban_words if re.search(r'h$', w) and not re.search(r'ch$', w)]
+
+# Initial v → b
+b_initial_forms = [w for w in cuban_words if re.search(r'^b', w)]
+v_initial_forms = [w for w in cuban_words if re.search(r'^v', w)]
+
+
+# -------------------------------------
+# Display the extracted patterns
+# -------------------------------------
+print("Words ending in -ao:",  set(ao_forms))
+print("Words ending in -aa:",  set(aa_forms))
+print("Words ending in -aos:", set(aos_forms))
+print("Words ending in -aas:", set(aas_forms))
+print("Words ending in -h (final h from -s):", set(final_h_forms))
+print("Words starting with b:", set(b_initial_forms))
+print("Words starting with v:", set(v_initial_forms))
+
+
+# ---------------------------------------------------
+# 4. BUILD DATAFRAME
+# ---------------------------------------------------
 df = pd.DataFrame(list(freq_data.items()), columns=['word', 'frequency'])
 
-# --- Add extra columns if you want ---
 df['length'] = df['word'].apply(len)
 df['has_accent'] = df['word'].apply(lambda x: bool(re.search(r'[áéíóú]', x)))
-df['ado_to_ao_shift'] = df['word'].apply(lambda w: 1 if re.search(r'ao$', w) else 0)
 
-# --- Sort by frequency ---
+# Multiple sound-change flags
+df['ado_to_ao_shift'] = df['word'].apply(lambda w: 1 if re.search(r'ao$', w) else 0)
+df['ada_to_aa_shift'] = df['word'].apply(lambda w: 1 if re.search(r'aa$', w) else 0)
+df['plural_aos_shift'] = df['word'].apply(lambda w: 1 if re.search(r'aos$', w) else 0)
+df['plural_aas_shift'] = df['word'].apply(lambda w: 1 if re.search(r'aas$', w) else 0)
+df['final_s_to_h']     = df['word'].apply(lambda w: 1 if re.search(r'h$', w) else 0)
+df['v_to_b_shift']     = df['word'].apply(lambda w: 1 if re.search(r'^b', w) else 0)
+
+
+# ---------------------------------------------------
+# 5. Sort + export
+# ---------------------------------------------------
 df = df.sort_values(by='frequency', ascending=False)
 
+def get_spacy_lemma(word):
+    doc = nlp(word)
+    return doc[0].lemma_
+
+df["spacy_lemma"] = df["word"].apply(get_spacy_lemma)
+
+
+# ---------------------------------------------------
+# 7. Rule-based recovery of canonical (standard) forms
+# ---------------------------------------------------
+
+def recover_standard_form(word):
+    # 1) -ao → -ado
+    if re.search(r'ao$', word):
+        return re.sub(r'ao$', 'ado', word)
+    
+    # 2) -aos → -ados
+    if re.search(r'aos$', word):
+        return re.sub(r'aos$', 'ados', word)
+
+    # 3) -aa → -ada
+    if re.search(r'aa$', word):
+        return re.sub(r'aa$', 'ada', word)
+
+    # 4) -aas → -adas
+    if re.search(r'aas$', word):
+        return re.sub(r'aas$', 'adas', word)
+
+    # 5) final -h → -s  (loh → los)
+    if re.search(r'h$', word) and not re.search(r'ch$', word):
+        return re.sub(r'h$', 's', word)
+
+    # 6) initial b for v (bola could come from vola)
+    if re.search(r'^b', word):
+        return 'v' + word[1:]
+
+    # no rule applies → return original
+    return word
+
+df["lemma_after_rules"] = df["word"].apply(recover_standard_form)
+
+
+# ---------------------------------------------------
+# 8. See if spaCy handles the recovered form
+# ---------------------------------------------------
+df["lemma_recovered_spacy"] = df["lemma_after_rules"].apply(get_spacy_lemma)
+
+# Was the word successfully normalized?
+df["is_recovered"] = df.apply(
+    lambda row: row["spacy_lemma"] == row["lemma_recovered_spacy"], axis=1
+)
 print(df)
 df.to_csv("lopez_castano_melanie_component2.csv", index=False, encoding="utf-8")
 
