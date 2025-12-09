@@ -18,47 +18,57 @@ In this analysis, I plan to look at orthographic and phonological changes in my 
 
 **Part 3: Analyze Your Data**
 
-```{python}
-#reduced form frequencies
-df["ado_to_ao"] = df["word"].apply(lambda x: 1 if re.search(r'ao$', x) else 0)
+```{# ============================================================}
+# COMPONENT 3 ANALYSIS: Reduction, Lemma, Frequency, POS
+# ============================================================
 
-df["ados_to_aos"] = df["word"].apply(lambda x: 1 if re.search(r'aos$', x) else 0)
+import re
+import pandas as pd
+import matplotlib.pyplot as plt
+import spacy
 
-df["ada_to_aa"] = df["word"].apply(lambda x: 1 if re.search(r'aa$', x) else 0)
+# -----------------------------
+# 1. REDUCED FORM FREQUENCIES
+# -----------------------------
 
-df["adas_to_aas"] = df["word"].apply(lambda x: 1 if re.search(r'aas$', x) else 0)
-
-reduction_counts = {
-    "ado→ao": df["ado_to_ao"].sum(),
-    "ados→aos": df["ados_to_aos"].sum(),
-    "ada→aa": df["ada_to_aa"].sum(),
-    "adas→aas": df["adas_to_aas"].sum()
+# Dictionary of reduction mappings
+reduction_patterns = {
+    "ado→ao": r"ao$",
+    "ados→aos": r"aos$",
+    "ada→aa": r"aa$",
+    "adas→aas": r"aas$"
 }
-reduction_counts
-('----------------------------------------------------')
 
-#lemma
+# Count frequency of each reduction type
+reduction_counts = {
+    label: df["word"].str.contains(pattern).sum()
+    for label, pattern in reduction_patterns.items()
+}
+
+reduction_counts
+
+# -----------------------------
+# 2. LEMMA TAGGING (spaCy)
+# -----------------------------
+
 nlp = spacy.load("es_core_news_sm")
 
 def get_lemma(word):
-    doc = nlp(word)
-    return doc[0].lemma_
+    return nlp(word)[0].lemma_
 
 df["lemma"] = df["word"].apply(get_lemma)
-df.head()
 
-def is_reduced(w):
-    return any([
-        re.search(r'ao$', w),
-        re.search(r'aos$', w),
-        re.search(r'aa$', w),
-        re.search(r'aas$', w)
-    ])
+# -----------------------------
+# 3. REDUCED vs. UNREDUCED FREQUENCY
+# -----------------------------
 
-df["is_reduced"] = df["word"].apply(is_reduced)
+# Function to detect reduced forms
+reduced_regex = r"(ao$|aos$|aa$|aas$)"
 
-reduced_total = df[df["is_reduced"] == True]["frequency"].sum()
-unreduced_total = df[df["is_reduced"] == False]["frequency"].sum()
+df["is_reduced"] = df["word"].str.contains(reduced_regex)
+
+reduced_total = df[df["is_reduced"]]["frequency"].sum()
+unreduced_total = df[~df["is_reduced"]]["frequency"].sum()
 
 freq_compare = {
     "Reduced Forms (e.g., pescao)": reduced_total,
@@ -67,13 +77,61 @@ freq_compare = {
 
 freq_compare
 
-('----------------------------------------------')
-#accented vs unaccented
+# -----------------------------
+# 4. ACCENTED vs. UNACCENTED STRESS
+# -----------------------------
+
 accent_freq = df.groupby("has_accent")["frequency"].sum()
-accent_freq.index = ["unaccented", "accented"]
+accent_freq.index = ["Unaccented", "Accented"]
 accent_freq
 
-df.to_csv("lopez_castano_melanie_component3.csv", index=False, encoding="utf-8")
+# -----------------------------
+# 5. POS DISTRIBUTION BY ENDING
+# -----------------------------
+
+# Function to label morpheme category
+def label_morpheme(word):
+    patterns = {
+        "-ao": r"ao$",
+        "-aa": r"aa$",
+        "-aos": r"aos$",
+        "-aas": r"aas$",
+        "-ado": r"ado$",
+        "-ada": r"ada$",
+        "-ados": r"ados$",
+        "-adas": r"adas$"
+    }
+    for label, pattern in patterns.items():
+        if re.search(pattern, word):
+            return label
+    return None
+
+# Apply morpheme labels
+df["morpheme"] = df["word"].fillna("").apply(label_morpheme)
+
+# Filter only relevant tokens
+df_morph = df[df["morpheme"].notna()]
+
+# POS cross-tabulation
+pos_distribution = pd.crosstab(df_morph["morpheme"], df_morph["pos_tag"])
+
+# -----------------------------
+# 6. PLOT: POS COMPARISON
+# -----------------------------
+
+pos_distribution.plot(
+    kind="bar",
+    figsize=(10, 6),
+    title="Parts of Speech for Standard vs. Reduced Endings in Cuban Spanish",
+    xlabel="Word Ending",
+    ylabel="Count of Tokens",
+    rot=0
+)
+
+plt.legend(title="POS Tag")
+plt.tight_layout()
+plt.show()
+
 ```
 
 **Part 4: Visualize**
@@ -96,8 +154,128 @@ plt.xticks(rotation=0)
 plt.tight_layout()
 plt.show()
 
+pos_compare.plot(
+    kind="bar",
+    figsize=(8,5),
+    title="Parts of Speech Comparison: Standard -ado vs. Cuban -ao",
+    xlabel="Part of Speech",
+    ylabel="Count",
+    rot=0
+)
+
+plt.legend(title="Form Type")
+plt.tight_layout()
+plt.show()
+
+# Plot grouped bar chart
+pos_compare.T.plot(
+    kind="bar",
+    figsize=(10,6),
+    ylabel="Word Count",
+    xlabel="Word Ending",
+    title="Parts of Speech Distribution for Standard vs. Reduced Endings in Cuban Spanish",
+    rot=0
+)
+
+plt.legend(title="POS Category")
+plt.tight_layout()
+plt.show()
+
+
+
 ```
 
 **Part 5: Interpret**
 
 For this analysis, I asked how often Cuban Spanish shows reduced forms of adjectives and nouns, like pescado -\> pescao, as well as frequency of accented vs unaccented spellings in casual orthography. I used pandas for filtering and counting and spaCy to look at lemma forms of these words. The results showed more instances of singular reductions -ado -\> -ao than plural reductions like -ados -\> -aos, and no instances at all of the predicted -aa or -aas forms. The dataset contained far more unreduced standard forms than reduced ones, which may reflect the semi-formal nature of blog-style writing compared to casual texting or speech. I also found that unaccented spellings were more common than accented, supporting my theory of informal orthography omitting diacritic marking. For the final project, I would be interested in finding any additional tokens for patterned reduction, possibly through FaceBook/Twitter, and analyzing part of speech correspondence in these reduced forms.
+
+```{python}
+# ============================================================
+# FULL ANALYSIS: POS for Standard vs. Reduced Endings
+# ============================================================
+
+import pandas as pd
+import re, unicodedata
+import spacy
+import matplotlib.pyplot as plt
+
+# ----------------------------
+# 0. Load Spanish spaCy model
+# ----------------------------
+nlp = spacy.load("es_core_news_sm")
+
+# ---------------------------------------
+# 1. CLEAN + NORMALIZE ALL WORD TOKENS
+# ---------------------------------------
+def clean_token(w):
+    w = str(w).lower()                                      # lowercase
+    w = re.sub(r'[^\wáéíóúñ]+', '', w)                      # drop punctuation
+    w = unicodedata.normalize('NFC', w)                     # normalize accents
+    return w
+
+cuban_words = [clean_token(w) for w in cuban_words if clean_token(w) != ""]
+
+# -------------------------------------------------
+# 2. BUILD FREQUENCY DATAFRAME
+# -------------------------------------------------
+freq = {}
+for w in cuban_words:
+    freq[w] = freq.get(w, 0) + 1
+
+df = pd.DataFrame(list(freq.items()), columns=["word", "frequency"])
+
+# -------------------------------------------------
+# 3. IDENTIFY MORPHOLOGICAL ENDINGS
+# -------------------------------------------------
+def label_morpheme(word):
+    endings = {
+        "-ao":   r"ao$",
+        "-aa":   r"aa$",
+        "-aos":  r"aos$",
+        "-aas":  r"aas$",
+        "-ado":  r"ado$",
+        "-ada":  r"ada$",
+        "-ados": r"ados$",
+        "-adas": r"adas$"
+    }
+    for lbl, pat in endings.items():
+        if re.search(pat, word):
+            return lbl
+    return None
+
+df["morpheme"] = df["word"].apply(label_morpheme)
+
+# Keep only words with one of the 8 endings
+df_morph = df[df["morpheme"].notna()]
+
+# -------------------------------------------------
+# 4. POS TAGGING
+# -------------------------------------------------
+def get_pos(word):
+    doc = nlp(word)
+    return doc[0].pos_   # ADJ, NOUN, VERB, ADV, etc.
+
+df_morph["pos"] = df_morph["word"].apply(get_pos)
+
+# -------------------------------------------------
+# 5. COUNT POS DISTRIBUTION + PLOT
+# -------------------------------------------------
+pos_distribution = pd.crosstab(df_morph["morpheme"], df_morph["pos"])
+
+print("\n### TOKEN COUNT BY MORPHOLOGICAL ENDING ###")
+print(df_morph["morpheme"].value_counts())
+
+# Stacked bar chart
+ax = pos_distribution.plot(
+    kind="bar",
+    stacked=True,
+    figsize=(12, 7),
+    title="POS Distribution for Standard vs. Reduced Endings in Cuban Spanish"
+)
+
+plt.xlabel("Word Ending")
+plt.ylabel("Token Count")
+plt.xticks(rotation=0)
+plt.l
+
+```

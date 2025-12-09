@@ -17,7 +17,17 @@ import pandas as pd
 import re
 from collections import Counter
 import spacy
+
+# Load Spanish spaCy model
 nlp = spacy.load("es_core_news_sm")
+
+# ---------------------------------------------------
+# 0. ASSUMING cuban_words IS ALREADY LOADED
+# cuban_words should be a list of word tokens
+# Example:
+# cuban_words = ["pescao","feo","melao",...]
+# ---------------------------------------------------
+
 
 # -----------------------------
 # 1. Basic frequency function
@@ -28,11 +38,11 @@ def word_freq(words):
         freq[w] = freq.get(w, 0) + 1
     return freq
 
-cuban_freq = word_freq(cuban_words)   # cuban_words must already be defined
+cuban_freq = word_freq(cuban_words)
 
 
 # -------------------------------------
-# 2. Target words your instructor asked about
+# 2. Words of interest (given by instructor)
 # -------------------------------------
 words = [
     'que', 'qué', 'los', 'loh', 'lo',
@@ -52,34 +62,23 @@ freq_data = {w: cuban_freq.get(w, 0) for w in words}
 # ---------------------------------------------------
 # 3. AUTOMATIC SOUND-CHANGE PATTERN EXTRACTION
 # ---------------------------------------------------
-# (-ado → -ao), (-ada → -aa), (-ados → -aos), (-adas → -aas)
 ao_forms   = [w for w in cuban_words if re.search(r'ao$', w)]
+ado_forms   = [w for w in cuban_words if re.search(r'ado$', w)]
 aa_forms   = [w for w in cuban_words if re.search(r'aa$', w)]
+ada_forms   = [w for w in cuban_words if re.search(r'ada$', w)]
 aos_forms  = [w for w in cuban_words if re.search(r'aos$', w)]
+ados_forms   = [w for w in cuban_words if re.search(r'ados$', w)]
 aas_forms  = [w for w in cuban_words if re.search(r'aas$', w)]
+adas_forms   = [w for w in cuban_words if re.search(r'adas$', w)]
 
-# Final -s → -h (loh, mish, toah, etc.)
 final_h_forms = [w for w in cuban_words if re.search(r'h$', w) and not re.search(r'ch$', w)]
 
-# Initial v → b
 b_initial_forms = [w for w in cuban_words if re.search(r'^b', w)]
 v_initial_forms = [w for w in cuban_words if re.search(r'^v', w)]
 
 
-# -------------------------------------
-# Display the extracted patterns
-# -------------------------------------
-print("Words ending in -ao:",  set(ao_forms))
-print("Words ending in -aa:",  set(aa_forms))
-print("Words ending in -aos:", set(aos_forms))
-print("Words ending in -aas:", set(aas_forms))
-print("Words ending in -h (final h from -s):", set(final_h_forms))
-print("Words starting with b:", set(b_initial_forms))
-print("Words starting with v:", set(v_initial_forms))
-
-
 # ---------------------------------------------------
-# 4. BUILD DATAFRAME
+# 4. BUILD INITIAL DATAFRAME
 # ---------------------------------------------------
 df = pd.DataFrame(list(freq_data.items()), columns=['word', 'frequency'])
 
@@ -96,10 +95,8 @@ df['v_to_b_shift']     = df['word'].apply(lambda w: 1 if re.search(r'^b', w) els
 
 
 # ---------------------------------------------------
-# 5. Sort + export
+# 5. LEMMATIZATION HELPER
 # ---------------------------------------------------
-df = df.sort_values(by='frequency', ascending=False)
-
 def get_spacy_lemma(word):
     doc = nlp(word)
     return doc[0].lemma_
@@ -108,52 +105,41 @@ df["spacy_lemma"] = df["word"].apply(get_spacy_lemma)
 
 
 # ---------------------------------------------------
-# 7. Rule-based recovery of canonical (standard) forms
+# 6. RULE-BASED RECOVERY OF STANDARD FORM
 # ---------------------------------------------------
-
 def recover_standard_form(word):
-    # 1) -ao → -ado
-    if re.search(r'ao$', word):
-        return re.sub(r'ao$', 'ado', word)
-    
-    # 2) -aos → -ados
-    if re.search(r'aos$', word):
-        return re.sub(r'aos$', 'ados', word)
-
-    # 3) -aa → -ada
-    if re.search(r'aa$', word):
-        return re.sub(r'aa$', 'ada', word)
-
-    # 4) -aas → -adas
-    if re.search(r'aas$', word):
-        return re.sub(r'aas$', 'adas', word)
-
-    # 5) final -h → -s  (loh → los)
-    if re.search(r'h$', word) and not re.search(r'ch$', word):
-        return re.sub(r'h$', 's', word)
-
-    # 6) initial b for v (bola could come from vola)
-    if re.search(r'^b', word):
-        return 'v' + word[1:]
-
-    # no rule applies → return original
+    if re.search(r'ao$', word):  return re.sub(r'ao$', 'ado', word)
+    if re.search(r'aos$', word): return re.sub(r'aos$', 'ados', word)
+    if re.search(r'aa$', word):  return re.sub(r'aa$', 'ada', word)
+    if re.search(r'aas$', word): return re.sub(r'aas$', 'adas', word)
+    if re.search(r'h$', word) and not re.search(r'ch$', word): return re.sub(r'h$', 's', word)
+    if re.search(r'^b', word): return 'v' + word[1:]
     return word
 
 df["lemma_after_rules"] = df["word"].apply(recover_standard_form)
-
-
-# ---------------------------------------------------
-# 8. See if spaCy handles the recovered form
-# ---------------------------------------------------
 df["lemma_recovered_spacy"] = df["lemma_after_rules"].apply(get_spacy_lemma)
+df["is_recovered"] = df.apply(lambda row: row["spacy_lemma"] == row["lemma_recovered_spacy"], axis=1)
 
-# Was the word successfully normalized?
-df["is_recovered"] = df.apply(
-    lambda row: row["spacy_lemma"] == row["lemma_recovered_spacy"], axis=1
-)
-print(df)
+
+# ---------------------------------------------------
+# 7. NEW: POS TAGGING FOR -ADO / -AO WORDS
+# ---------------------------------------------------
+def get_pos(word):
+    doc = nlp(word)
+    return doc[0].pos_   # spaCy POS tag (ADJ, NOUN, VERB, etc.)
+
+df["pos_tag"] = df["word"].apply(get_pos)  # POS tag of original Cuban form
+df["pos_standard"] = df["lemma_after_rules"].apply(get_pos)  # POS tag of standard form
+
+
+# ---------------------------------------------------
+# 8. Sort + Export to CSV
+# ---------------------------------------------------
+df = df.sort_values(by='frequency', ascending=False)
 df.to_csv("lopez_castano_melanie_component2.csv", index=False, encoding="utf-8")
-
+print(ao_forms)
+print(ado_forms)
+print(df)
 ```
 
 ### **Project Summary**
@@ -179,3 +165,146 @@ The final CSV contains the following columns:
 There are roughly 15 target rows in the table.\
 
 An interesting observation is that several informal or colloquial spellings (like **pescao**, **melao**, **mantecao**, **cuidao**) appear alongside their standard forms (**pescado**, **mantecado**, **cuidado**). This highlights how Cuban Spanish often drops the intervocalic **/d/** in **-ado** endings during casual speech.
+
+```{python}
+import pandas as pd
+import re, unicodedata
+import spacy
+import matplotlib.pyplot as plt
+
+nlp = spacy.load("es_core_news_sm")
+
+# 1. CLEAN & NORMALIZE
+def clean_token(w):
+    w = str(w).lower()
+    w = re.sub(r'[^\wáéíóúñ]+', '', w)
+    w = unicodedata.normalize('NFC', w)
+    return w
+
+cuban_words = [clean_token(w) for w in cuban_words if clean_token(w) != ""]
+
+# 2. FREQUENCY DF
+freq = {}
+for w in cuban_words:
+    freq[w] = freq.get(w, 0) + 1
+df = pd.DataFrame(list(freq.items()), columns=["word", "frequency"])
+
+# 3. MORPHEME LABELS
+def label_morpheme(word):
+    endings = {
+        "-ao": r"ao$",
+        "-aa": r"aa$",
+        "-aos": r"aos$",
+        "-aas": r"aas$",
+        "-ado": r"ado$",
+        "-ada": r"ada$",
+        "-ados": r"ados$",
+        "-adas": r"adas$"
+    }
+    for lbl, pat in endings.items():
+        if re.search(pat, word):
+            return lbl
+    return None
+
+df["morpheme"] = df["word"].apply(label_morpheme)
+df_morph = df[df["morpheme"].notna()].copy()  # copy to avoid SettingWithCopyWarning
+
+# 4. POS TAGGING (safe with .loc)
+df_morph.loc[:, "pos"] = df_morph["word"].apply(lambda w: nlp(w)[0].pos_)
+
+# 5. COUNT POS DISTRIBUTION
+pos_distribution = pd.crosstab(df_morph["morpheme"], df_morph["pos"])
+print("\n### TOKEN COUNT BY MORPHOLOGICAL ENDING ###")
+print(df_morph["morpheme"].value_counts())
+
+# 6. STACKED BAR PLOT
+ax = pos_distribution.plot(
+    kind="bar",
+    stacked=True,
+    figsize=(12, 7),
+    title="POS Distribution for Standard vs. Reduced Endings in Cuban Spanish"
+)
+plt.xlabel("Word Ending")
+plt.ylabel("Token Count")
+plt.xticks(rotation=0)
+plt.legend(title="POS Tag", bbox_to_anchor=(1.05, 1), loc='upper left')
+plt.tight_layout()
+plt.savefig("pos.png", dpi=300, bbox_inches='tight')  # saves as PNG
+
+plt.show()
+
+```
+
+```{python}
+# ============================================================
+# FREQUENCY OF REDUCED VS STANDARD FORMS (8 ENDINGS)
+# ============================================================
+
+import pandas as pd
+import re, unicodedata
+import matplotlib.pyplot as plt
+
+# ----------------------------
+# 1. CLEAN & NORMALIZE TOKENS
+# ----------------------------
+def clean_token(w):
+    w = str(w).lower()
+    w = re.sub(r'[^\wáéíóúñ]+', '', w)  # remove punctuation
+    w = unicodedata.normalize('NFC', w)
+    return w
+
+cuban_words_clean = [clean_token(w) for w in cuban_words if clean_token(w) != ""]
+
+# ----------------------------
+# 2. DEFINE MORPHOLOGICAL ENDINGS
+# ----------------------------
+endings = {
+    "-ao": r"ao$",
+    "-aos": r"aos$",
+    "-aa": r"aa$",
+    "-aas": r"aas$",
+    "-ado": r"ado$",
+    "-ados": r"ados$",
+    "-ada": r"ada$",
+    "-adas": r"adas$"
+}
+
+# ----------------------------
+# 3. COUNT FREQUENCIES
+# ----------------------------
+freq_counts = {}
+for label, pattern in endings.items():
+    freq_counts[label] = sum(1 for w in cuban_words_clean if re.search(pattern, w))
+
+# Convert to DataFrame for plotting
+freq_df = pd.DataFrame.from_dict(freq_counts, orient='index', columns=['Frequency'])
+
+# ----------------------------
+# 4. PLOT BAR CHART
+# ----------------------------
+colors = {
+    "-ao": "#ff9999", "-aos": "#ff9999", "-aa": "#ff9999", "-aas": "#ff9999",  # reduced
+    "-ado": "#66b3ff", "-ados": "#66b3ff", "-ada": "#66b3ff", "-adas": "#66b3ff"  # standard
+}
+
+ax = freq_df.plot(
+    kind='bar',
+    figsize=(10,6),
+    color=[colors[idx] for idx in freq_df.index],
+    legend=False,
+    title="Frequency of Reduced vs Standard Forms in Cuban Spanish"
+)
+
+plt.ylabel("Token Count")
+plt.xlabel("Word Ending")
+plt.xticks(rotation=0)
+
+# Add value labels on top of bars
+for i, val in enumerate(freq_df['Frequency']):
+    ax.text(i, val + 0.5, str(val), ha='center', va='bottom')
+
+plt.tight_layout()
+plt.savefig("frequency.png", dpi=300, bbox_inches='tight')  # saves as PNG
+plt.show()
+
+```
