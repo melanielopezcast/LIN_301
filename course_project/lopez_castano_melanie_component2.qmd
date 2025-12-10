@@ -308,3 +308,90 @@ plt.savefig("frequency.png", dpi=300, bbox_inches='tight')  # saves as PNG
 plt.show()
 
 ```
+
+```{python}
+import pandas as pd
+import matplotlib.pyplot as plt
+import re
+import unicodedata
+
+# -------------------------------
+# 0) ASSUMING cuban_words EXISTS
+# -------------------------------
+# If you already have cuban_words, skip this.
+# If not, load your text file here:
+# with open("YOURFILE.txt", "r", encoding="utf-8") as f:
+#     cuban_words = f.read().split()
+
+# -------------------------------
+# 1) Build DF of token counts
+# -------------------------------
+def word_freq(words):
+    freq = {}
+    for w in words:
+        freq[w] = freq.get(w, 0) + 1
+    return freq
+
+cuban_freq = word_freq(cuban_words)
+df = pd.DataFrame(list(cuban_freq.items()), columns=["word", "frequency"])
+
+# -------------------------------
+# 2) Normalize Spanish tokens
+# -------------------------------
+def normalize_token(token):
+    token = str(token).lower()
+    token = re.sub(r"[^\wáéíóúñü]", "", token)  # remove punctuation
+    token = unicodedata.normalize("NFC", token)  # normalize accents
+    return token
+
+df["norm_word"] = df["word"].apply(normalize_token)
+
+# -------------------------------
+# 3) Accent Minimal Pairs
+# -------------------------------
+accent_pairs = {
+    "que": "qué",
+    "el": "él",
+    "tu": "tú",
+    "mi": "mí",
+    "si": "sí"
+}
+
+# -------------------------------
+# 4) Count occurrences of each pair
+# -------------------------------
+pair_counts = []
+for unaccented, accented in accent_pairs.items():
+    unaccented_count = df[df["norm_word"] == unaccented]["frequency"].sum()
+    accented_count = df[df["norm_word"] == accented]["frequency"].sum()
+    pair_counts.append([unaccented + "/" + accented, unaccented_count, accented_count])
+
+accent_df = pd.DataFrame(pair_counts, columns=["pair", "Unaccented", "Accented"])
+accent_df.set_index("pair", inplace=True)
+
+print("\n### Frequency Counts for Accent Minimal Pairs ###")
+print(accent_df)
+
+# -------------------------------
+# 5) Plot Grouped Bar Chart
+# -------------------------------
+plt.figure(figsize=(10, 6))
+ax = accent_df.plot(kind="bar", width=0.8, figsize=(10,6), color=["gray", "royalblue"])
+
+# Add value labels above bars
+for i, (idx, row) in enumerate(accent_df.iterrows()):
+    ax.text(i - 0.18, row["Unaccented"] + 0.3, str(row["Unaccented"]), color="black")
+    ax.text(i + 0.05, row["Accented"] + 0.3, str(row["Accented"]), color="black")
+
+plt.title("Frequency of Accented vs. Unaccented Forms in Cuban Spanish", fontsize=13)
+plt.ylabel("Token Count")
+plt.xlabel("Minimal Pairs (Accent-driven Meaning Change)")
+plt.xticks(rotation=0)
+plt.legend(title="Form Type")
+plt.tight_layout()
+
+# SAVE to use in your HTML site
+plt.savefig("accent_pair_frequencies.png", dpi=300, bbox_inches='tight')
+plt.show()
+
+```
